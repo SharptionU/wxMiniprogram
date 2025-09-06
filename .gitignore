@@ -16,7 +16,6 @@ dist
 dist-ssr
 coverage
 *.local
-
 /cypress/videos/
 /cypress/screenshots/
 
@@ -32,5 +31,11 @@ coverage
 
 *.tsbuildinfo
 
-
+# enviroment files
 /api/env
+
+#pycache
+**/__pycache__/*
+*.pyc
+*.pyo
+*.pyd

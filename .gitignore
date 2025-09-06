@@ -8,6 +8,8 @@ pnpm-debug.log*
 lerna-debug.log*
 
 /webui/src/node_modules/
+/wxui/src/unpackage/
+
 
 .DS_Store
 dist

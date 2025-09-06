@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vue + FastAPI 聊天示例</title>
+    <!-- 引入Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- 引入Tailwindcss -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+
+    <script>
+        // 配置Tailwind自定义颜色
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        dark: '#1E293B',
+                        light: '#F8FAFC'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .chat-bubble-left {
+                border-radius: 0.75rem 0.75rem 0.75rem 0;
+            }
+            .chat-bubble-right {
+                border-radius: 0.75rem 0.75rem 0 0.75rem;
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div id="app" class="w-full max-w-2xl bg-white rounded-xl shadow-lg overflow-hidden">
+        <!-- 聊天头部 -->
+        <div class="bg-primary text-white p-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <i class="fa fa-comments text-2xl"></i>
+                <h1 class="text-xl font-bold">实时聊天</h1>
+            </div>
+            <div v-if="!connected" class="flex items-center text-sm">
+                <span class="inline-block w-2 h-2 bg-red-400 rounded-full mr-2"></span>
+                未连接
+            </div>
+            <div v-if="connected" class="flex items-center text-sm">
+                <span class="inline-block w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+                已连接
+            </div>
+        </div>
+
+        <!-- 登录界面 -->
+        <div v-if="!username" class="p-6">
+            <h2 class="text-xl font-semibold mb-4 text-center">请输入您的昵称</h2>
+            <div class="flex space-x-3">
+                <input
+                    v-model="tempUsername"
+                    type="text"
+                    placeholder="您的昵称"
+                    class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                >
+                <button
+                    @click="setUsername"
+                    class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    :disabled="!tempUsername.trim()"
+                >
+                    进入聊天
+                </button>
+            </div>
+        </div>
+
+        <!-- 聊天界面 -->
+        <div v-if="username" class="flex flex-col h-[500px]">
+            <!-- 消息列表 -->
+            <div class="flex-1 p-4 overflow-y-auto scrollbar-hide bg-gray-50">
+                <div v-if="messages.length === 0" class="text-center text-gray-500 py-8">
+                    开始聊天吧...
+                </div>
+
+                <div v-for="(message, index) in messages" :key="index" class="mb-4">
+                    <!-- 系统消息 -->
+                    <div v-if="message.isSystem" class="flex justify-center">
+                        <span class="px-3 py-1 bg-gray-200 text-gray-600 text-sm rounded-full">
+                            {{ message.text }}
+                        </span>
+                    </div>
+
+                    <!-- 他人消息 -->
+                    <div v-else-if="message.username !== username" class="flex items-start">
+                        <div class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-700 mr-2 flex-shrink-0">
+                            {{ message.username.charAt(0) }}
+                        </div>
+                        <div>
+                            <div class="text-xs text-gray-500 mb-1">{{ message.username }}</div>
+                            <div class="bg-gray-200 text-gray-800 px-4 py-2 chat-bubble-left max-w-[70%]">
+                                {{ message.text }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 自己的消息 -->
+                    <div v-else class="flex items-start justify-end">
+                        <div class="text-right">
+                            <div class="text-xs text-gray-500 mb-1">自己</div>
+                            <div class="bg-primary text-white px-4 py-2 chat-bubble-right max-w-[70%]">
+                                {{ message.text }}
+                            </div>
+                        </div>
+                        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white ml-2 flex-shrink-0">
+                            {{ message.username.charAt(0) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 输入区域 -->
+            <div class="p-4 border-t border-gray-200">
+                <div class="flex space-x-2">
+                    <input
+                        v-model="newMessage"
+                        type="text"
+                        placeholder="输入消息..."
+                        @keyup.enter="sendMessage"
+                        class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    >
+                    <button
+                        @click="sendMessage"
+                        class="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+                        :disabled="!newMessage.trim()"
+                    >
+                        <i class="fa fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted, watch } = Vue;
+
+        createApp({
+            setup() {
+                // 状态管理
+                const username = ref('');
+                const tempUsername = ref('');
+                const newMessage = ref('');
+                const messages = ref([]);
+                const connected = ref(false);
+                let ws = null;
+
+                // 设置用户名并连接WebSocket
+                const setUsername = () => {
+                    if (tempUsername.value.trim()) {
+                        username.value = tempUsername.value.trim();
+                        connectWebSocket();
+                    }
+                };
+
+                // 连接WebSocket
+                const connectWebSocket = () => {
+                    // 注意：如果在本地运行，确保FastAPI服务在5000端口
+                    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    const wsUri = `${wsProtocol}//${window.location.hostname}:5000/ws/${username.value}`;
+
+                    ws = new WebSocket(wsUri);
+
+                    ws.onopen = () => {
+                        console.log('WebSocket连接已建立');
+                        connected.value = true;
+                        messages.value.push({
+                            isSystem: true,
+                            text: '已连接到聊天服务器'
+                        });
+                    };
+
+                    ws.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        messages.value.push(data);
+                        // 自动滚动到底部
+                        scrollToBottom();
+                    };
+
+                    ws.onclose = () => {
+                        console.log('WebSocket连接已关闭');
+                        connected.value = false;
+                        messages.value.push({
+                            isSystem: true,
+                            text: '与服务器断开连接，尝试重连...'
+                        });
+                        // 尝试重连
+                        setTimeout(connectWebSocket, 3000);
+                    };
+
+                    ws.onerror = (error) => {
+                        console.error('WebSocket错误:', error);
+                        messages.value.push({
+                            isSystem: true,
+                            text: '连接出错'
+                        });
+                    };
+                };
+
+                // 发送消息
+                const sendMessage = () => {
+                    if (newMessage.value.trim() && ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({
+                            username: username.value,
+                            text: newMessage.value.trim()
+                        }));
+                        newMessage.value = '';
+                    }
+                };
+
+                // 自动滚动到最新消息
+                const scrollToBottom = () => {
+                    const chatContainer = document.querySelector('.overflow-y-auto');
+                    if (chatContainer) {
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                    }
+                };
+
+                // 监听消息变化，自动滚动
+                watch(messages, () => {
+                    scrollToBottom();
+                });
+
+                // 页面关闭时关闭WebSocket连接
+                onMounted(() => {
+                    window.addEventListener('beforeunload', () => {
+                        if (ws) {
+                            ws.close();
+                        }
+                    });
+                });
+
+                return {
+                    username,
+                    tempUsername,
+                    newMessage,
+                    messages,
+                    connected,
+                    setUsername,
+                    sendMessage
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

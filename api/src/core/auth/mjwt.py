@@ -1,10 +1,9 @@
 """jwt生成和解析 工具函数 命名为 mjwt 与 jwt 模块区分 """
 import jwt
 from datetime import timedelta, datetime, timezone
-from core.config import config
+from core.config import settings
 
-jwt_config = config.get("api-auth")
-
+jwt_config = settings.api_auth
 def gen_jwt(data: dict) -> str:
     """
     创建 jwt token 到期日期使用统一utc，其余参数在config.py中配置
@@ -12,9 +11,9 @@ def gen_jwt(data: dict) -> str:
     :return:
     """
     to_encode = data.copy()
-    expires_delta = datetime.now(timezone.utc) + timedelta(minutes=jwt_config["expires_min"])
+    expires_delta = datetime.now(timezone.utc) + timedelta(minutes=jwt_config.expires_min)
     to_encode.update({"exp": int(expires_delta.timestamp())})
-    return jwt.encode(to_encode, jwt_config["secret_key"], algorithm=jwt_config["algorithm"])
+    return jwt.encode(to_encode, jwt_config.secret_key, algorithm=jwt_config.algorithm)
 
 
 def parse_jwt(token: str) -> dict | None:
@@ -24,7 +23,7 @@ def parse_jwt(token: str) -> dict | None:
     :return: 失败或到期返回None
     """
     try:
-        _payload = jwt.decode(token, jwt_config["secret_key"], algorithms=[jwt_config["algorithm"]])
+        _payload = jwt.decode(token, jwt_config.secret_key, algorithms=[jwt_config.algorithm])
     except jwt.PyJWTError:
         return None
     else:

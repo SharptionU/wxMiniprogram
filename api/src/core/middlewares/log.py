@@ -1,22 +1,21 @@
 """日志打印中间件"""
 import time
 from starlette.middleware.base import BaseHTTPMiddleware, Request, Response, RequestResponseEndpoint
-from core.config import config
+from core.config import settings
 
 __all__ = ['LogMiddleware']
 
-env = config.get("environment", "development")
-
 
 class LogMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app):
+    def __init__(self, app,e:str="dev"):
+        self.env = e
         super().__init__(app)
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        print("use log middleware")
         start_time = time.time()
-
         # 开发环境下打印请求信息
-        if env == "development":
+        if self.env == "dev":
             # 打印请求信息
             print(f"\n{'=' * 50}")
             print(f"Request: {request.method} {request.url}")
@@ -35,7 +34,7 @@ class LogMiddleware(BaseHTTPMiddleware):
         process_time = (time.time() - start_time) * 1000  # 毫秒
 
         # 开发环境下打印响应信息
-        if env == "development":
+        if self.env == "dev":
             # 打印响应信息
             print(f"Response: {response.status_code}")
             print(f"Headers: {dict(response.headers)}")

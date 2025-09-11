@@ -99,7 +99,7 @@ class Settings(BaseSettings):
     version: str = "1.0"
     api_prefix: str = "/api/v1"
 
-    environment: Literal["development", "testing", "production"] = "development"
+    environment: Literal["dev", "prod"] = "dev"
 
     # 嵌套子配置
     uvicorn: UvicornConfig = UvicornConfig()

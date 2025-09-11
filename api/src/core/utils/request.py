@@ -1,4 +1,4 @@
-from schema.base import BaseReqModel
+from schemas.base import BaseReqModel
 
 
 def query_params_purify(m: BaseReqModel):

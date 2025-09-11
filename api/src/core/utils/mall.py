@@ -1,11 +1,11 @@
 import time
 import random
-from core.config import config
+from core.config import settings
 
-business_config=config.get("business",{})
+business_config= settings.business
 # 支付方式编码映射
 def get_payment_method_code(payment_method: str) -> str:
-    payment_codes = business_config.get("payment_code",{})
+    payment_codes = business_config.payment_code
     """
     将支付方式映射为2位编码
     可根据实际支付方式进行扩展

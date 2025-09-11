@@ -1,9 +1,9 @@
 """获取语言中间件"""
 import i18n
 from starlette.middleware.base import BaseHTTPMiddleware, Request, Response, RequestResponseEndpoint
-from core.config import config
+from core.config import settings
 
-default_lang = config.get("default_language", "zh")
+default_lang = settings.language.default
 
 
 class LanguageMiddleware(BaseHTTPMiddleware):
@@ -12,6 +12,7 @@ class LanguageMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # 从请求头获取语言偏好（如 "en-US,en;q=0.9,zh-CN;q=0.8"）
+        print("use lang middleware")
         accept_language = request.headers.get("Accept-Language", "")
         # 提取主要语言（取第一个分隔的语言，如 "en" 或 "zh"）
         locale = accept_language.split(",")[0].split("-")[0] if accept_language else default_lang

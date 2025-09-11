@@ -2,7 +2,8 @@
 from starlette import status
 from starlette.middleware.base import BaseHTTPMiddleware, Request, Response, RequestResponseEndpoint
 from fastapi.responses import JSONResponse
-from core.utils.mjwt import parse_jwt
+from core.auth.mjwt import parse_jwt
+from core.config import settings
 
 
 # 认证中间件
@@ -18,12 +19,15 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         # 跳过不需要认证的路径，例如登录接口
         # [7:] 跳过 /api/v1
-        if request.url.path[7:] in self.exclude:
+        print("use auth middleware")
+        len_prefix =len(settings.api_prefix)+1
+        if request.url.path[len_prefix:] in self.exclude:
             return await call_next(request)
 
         for start in self.exclude_start:
-            if request.url.path[7:].startswith(start):
+            if request.url.path[len_prefix:].startswith(start):
                 return await call_next(request)
+
         # 获取Authorization头
         auth_header = request.headers.get("Authorization")
         if not auth_header or not auth_header.startswith("Bearer "):

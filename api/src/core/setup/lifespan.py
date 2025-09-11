@@ -1,25 +1,24 @@
-from fastapi import FastAPI
 from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
 from motor.motor_asyncio import AsyncIOMotorClient
 
-# 1. 配置 MongoDB 连接信息
-MONGODB_URI = "mongodb://localhost:27017"  # MongoDB 连接地址
-DATABASE_NAME = "fastapi_mongo_demo"  # 数据库名称
+from core.config import settings
 
 
-# 2. 定义 lifespan 管理 MongoDB 连接生命周期
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def app_lifespan(app: FastAPI):
+    """应用生命周期管理"""
     # 启动阶段：创建 MongoDB 客户端和数据库实例
     print("🔗 连接 MongoDB...")
     # 创建异步客户端
-    app.state.mongo_client = AsyncIOMotorClient(MONGODB_URI)
+    app.state.mongo_client = AsyncIOMotorClient(str(settings.mongo.db_uri))
     # 获取数据库实例
-    app.state.mongo_db = app.state.mongo_client[DATABASE_NAME]
+    app.state.mongo_db = app.state.mongo_client[settings.mongo.db_name]
     # 测试连接（可选，确保连接成功）
     try:
         await app.state.mongo_db.command("ping")  # 发送 ping 命令验证连接
-        print(f"✅ 成功连接到 MongoDB: {DATABASE_NAME}")
+        print(f"✅ 成功连接到 MongoDB: {settings.mongo.db_name}")
     except Exception as e:
         # 连接失败时终止应用启动
         raise RuntimeError(f"❌ MongoDB 连接失败: {str(e)}") from e

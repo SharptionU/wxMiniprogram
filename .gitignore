@@ -7,8 +7,8 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-/webui/src/node_modules/
-/wxui/src/unpackage/
+/web-admin/src/node_modules/
+/miniprogram/src/unpackage/
 
 
 .DS_Store
@@ -32,7 +32,7 @@ coverage
 *.tsbuildinfo
 
 # enviroment files
-/api/env
+/backend/env
 
 #pycache
 **/__pycache__/*
